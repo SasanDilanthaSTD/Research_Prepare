@@ -6,7 +6,7 @@
 >- create 
 
 ```bash
-conda create -n research_env python=3.10 -y
+    conda create -n research_env python=3.10 -y
 ```
 
 >- activate 
@@ -21,7 +21,12 @@ conda conda activate research_env
 conda conda research_env
 ```
 
-##### After exicute requirements.txt file
+>- if you want to see your conda vertual enviroment list then run:
+```bash
+conda env list
+```
+
+##### After activating ```research_env``` and exicute requirements.txt file
 ```bash
 pip install -r requirements.txt
 ```

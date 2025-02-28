@@ -1,0 +1,9 @@
+tensorflow
+glob2
+rasterio
+pandas
+notebook
+numpy
+scikit-learn
+matplotlib
+joblib

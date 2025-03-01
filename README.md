@@ -12,13 +12,13 @@
 >- activate 
 
 ```bash
-conda conda activate research_env
+    conda activate research_env
 ```
 
 >- deactivate
 
 ```bash
-conda conda research_env
+    conda research_env
 ```
 
 >- if you want to see your conda vertual enviroment list then run:

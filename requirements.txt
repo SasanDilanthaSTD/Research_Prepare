@@ -7,3 +7,5 @@ numpy
 scikit-learn
 matplotlib
 joblib
+seaborn
+mlflow

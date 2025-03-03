@@ -10,3 +10,4 @@ joblib
 seaborn
 mlflow
 gdal
+xgboost

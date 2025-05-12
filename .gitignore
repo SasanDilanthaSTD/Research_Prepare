@@ -1,1 +1,12 @@
 /data/*
+*.pkl
+*.h5
+/logs/*
+/models/*
+/Data/*
+
+Notebooks/test/test/fix_crs/*
+Notebooks/test/test/patches/*
+
+
+/temp/*

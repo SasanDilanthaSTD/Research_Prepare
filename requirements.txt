@@ -12,3 +12,5 @@ mlflow
 gdal
 xgboost
 imblearn
+exifread
+pyqt5

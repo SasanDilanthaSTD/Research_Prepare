@@ -4,3 +4,10 @@
 /logs/*
 /models/*
 /Data/*
+/Data/*
+
+Notebooks/test/test/fix_crs/*
+Notebooks/test/test/patches/*
+
+
+/temp/*

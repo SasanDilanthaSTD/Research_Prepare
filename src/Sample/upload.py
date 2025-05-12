@@ -99,13 +99,15 @@ class Window(QtWidgets.QWidget):
                     self.image_queue.put(file_path)
     
     def _save_images_from_queue(self):
-        """Save images from queue to temp folder with sequential names"""
+        """Save images from queue to temp folder with sequential names, preserving original extension"""
         while not self.image_queue.empty():
             src_path = self.image_queue.get()
-            new_name = f"image_{self.counter:04d}.tif"
+            ext = os.path.splitext(src_path)[1]  # preserves original case of extension
+            new_name = f"image_{self.counter:04d}{ext}"
             dest_path = os.path.join(self.temp_dir, new_name)
             shutil.copy2(src_path, dest_path)
             self.counter += 1
+
     
     def _clear_temp_directory(self):
         """Clear the temp/images directory"""

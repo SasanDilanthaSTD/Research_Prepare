@@ -1,0 +1,6 @@
+/data/*
+*.pkl
+*.h5
+/logs/*
+/models/*
+/Data/*

@@ -17,3 +17,6 @@ pyqt5
 pyodm 
 docker
 psutil
+shapely
+geopandas
+contextily

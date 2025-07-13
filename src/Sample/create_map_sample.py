@@ -416,7 +416,6 @@ def display_growth_stage_map(geojson_path: Path, output_map_path: Path, growth_s
 if __name__ == "__main__":
     # --- 1. Load your ML Model ---
     try:
-        # Load your actual trained model here
         # ml_model = joblib.load(ML_MODEL_PATH)
         print(f"Attempting to load ML model from {ML_MODEL_PATH}...", flush=True)
         if not os.path.exists(ML_MODEL_PATH):

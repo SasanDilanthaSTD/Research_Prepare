@@ -11,3 +11,6 @@ Notebooks/test/test/patches/*
 
 
 /temp/*
+
+.vscode/
+.idea/

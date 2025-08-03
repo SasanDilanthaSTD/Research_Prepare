@@ -1,0 +1,34 @@
+band_mappings:
+  DEFAULT:
+    RED: 0
+    NIR: 3
+    SWIR: 1
+  Fix4D:
+    BLUE: 0
+    GREEN: 1
+    RED: 2
+    RED_EDGE: 3
+    NIR: 4
+  ODM:
+    RED: 0
+    GREEN: 1
+    BLUE: 2
+    NIR: 3
+    RED_EDGE: 4
+
+default_colors:
+  germination: "#B3E5FC"
+  tillering: "#8BC34A"
+  grand_growth: "#4CAF50"
+  ripening: "#FFEB3B"
+  unclassified: "#808080"
+
+processing:
+  patch_size: 64
+  min_pixel_sum_threshold: 5000
+  band_mapping_type: "ODM"
+
+paths:
+  model: "src/model/xgb_model_v3.joblib"
+  temp: "temp"
+  output: "temp_map"

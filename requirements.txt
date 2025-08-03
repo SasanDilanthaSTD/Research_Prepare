@@ -20,3 +20,6 @@ psutil
 shapely
 geopandas
 contextily
+pyyaml
+PyQtWebEngine
+typing

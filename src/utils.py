@@ -96,10 +96,15 @@ def load_config(config_path: Path = Path("config.yml")) -> Dict[str, Any]:
         logger.error(f"Failed to load config from {config_path}: {e}")
         raise
 
-def load_model(model_path: Path) -> Any:
-    """Load a trained ML model."""
+def load_model() -> Any:
+    """Load a trained ML model using YAML."""
     logger = logging.getLogger(__name__)
     try:
+        default_model_dir = Path(__file__).parent / "model" / "model.joblib"
+        config = load_config()
+        if "model" not in config:
+            logger.warning('Key "model" not found in config, using default "model.joblib".')
+        model_path = Path(config.get("model", default_model_dir))
         model = joblib.load(model_path)
         logger.info(f"Model loaded successfully from {model_path}")
         return model

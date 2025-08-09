@@ -111,6 +111,6 @@ def calculate_ndvi(nir_band: np.ndarray, red_band: np.ndarray) -> np.ndarray:
     """Calculate Normalized Difference Vegetation Index (NDVI)."""
     return (nir_band - red_band) / (nir_band + red_band + 1e-10)
 
-def calculate_ndwi(nir_band: np.ndarray, swir_band: np.ndarray) -> np.ndarray:
+def calculate_ndwi(nir_band: np.ndarray, green: np.ndarray) -> np.ndarray:
     """Calculate Normalized Difference Water Index (NDWI)."""
-    return (nir_band - swir_band) / (nir_band + swir_band + 1e-10)
+    return (nir_band - green) / (nir_band + green + 1e-10)

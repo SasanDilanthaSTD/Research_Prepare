@@ -7,9 +7,11 @@ import logging
 class Config:
     """Configuration manager that reads from YAML file."""
     
-    def __init__(self, config_path: Path = Path("config.yml")):
+    def __init__(self):
+        self.src_dir = Path(__file__).parent.parent.parent / "src"
+        self.config_path = self.src_dir / "config" / "config.yaml"
         self.logger = setup_logging()
-        self.config = load_config(config_path)
+        self.config = load_config(self.config_path)
         self.root_dir = Path(__file__).parent.parent.parent
         
         # Validate and set paths
@@ -49,16 +51,20 @@ class Config:
     
     @property
     def model_path(self) -> Path:
-        return self.root_dir / self.config.get("paths", {}).get("model", "src/model/xgb_model_v3.joblib")
+        return self.root_dir / self.config.get("paths", {}).get("model", "src/model/model.joblib")
     
     @property
     def temp_dir(self) -> Path:
         return self.root_dir / self.config.get("paths", {}).get("temp", "temp")
     
     @property
+    def temp_map_dir(self) -> Path:
+        return self.root_dir / self.config.get("paths", {}).get("temp_map", "temp_map")
+
+    @property
     def output_dir(self) -> Path:
-        return self.root_dir / self.config.get("paths", {}).get("output", "temp_map")
-    
+        return self.root_dir / self.config.get("paths", {}).get("output", "output")
+
     @property
     def log_dir(self) -> Path:
         return self.root_dir / self.config.get("paths", {}).get("logs", "logs")
@@ -73,6 +79,7 @@ class Config:
             raise FileNotFoundError(error_msg)
         
         self.temp_dir.mkdir(parents=True, exist_ok=True)
+        self.temp_map_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir.mkdir(parents=True, exist_ok=True)
         

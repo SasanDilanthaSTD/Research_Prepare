@@ -3,9 +3,9 @@ from typing import Dict, Optional
 import geopandas as gpd
 from folium import Map, GeoJson, GeoJsonTooltip
 import logging
-from .utils import log_execution_time
+from utils import log_execution_time
 
-from .config import Config
+from config import Config
 
 class MapGenerator:
     """Generates interactive maps from GeoJSON files."""

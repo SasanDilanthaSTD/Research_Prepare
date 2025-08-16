@@ -1,5 +1,9 @@
-# main.py
 import sys
+import os
+
+# Add the project root or src folder to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from pathlib import Path
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QWidget, 
                              QPushButton, QLabel, QFileDialog, QProgressBar)
@@ -7,7 +11,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl, QThread, pyqtSignal, QObject, pyqtSlot
 import logging
 
-from .config import Config
+from config import Config
 from .tiff_processor import TiffProcessor
 from .map_generator import MapGenerator
 

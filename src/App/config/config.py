@@ -1,7 +1,12 @@
-# config.py
+import sys
+import os
+
+# Add src to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from pathlib import Path
 from typing import Dict, Any, List
-from .utils import load_config, setup_logging
+from utils import load_config, setup_logging
 import logging
 
 class Config:

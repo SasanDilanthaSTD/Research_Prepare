@@ -4,5 +4,6 @@ Version: 0.0.0
 Summary: This for the final year research project
 Author: Sasan Dilanth, sasandilanth@gmail.com | Hashini Sulakshana, hashinisulakshanakumari@gmail.com
 License-File: LICENSE
-Dynamic: author
-Dynamic: summary
+Dynamic: 
+  - author
+  - summary

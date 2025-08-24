@@ -1,15 +1,18 @@
-# main.py
 import sys
+import os
 from pathlib import Path
+import logging
+
+from src.App.config import Config
+from src.App.component.tiff_processor import TiffProcessor
+from src.App.component.map_generator import MapGenerator
+
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QWidget, 
                              QPushButton, QLabel, QFileDialog, QProgressBar)
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl, QThread, pyqtSignal, QObject, pyqtSlot
-import logging
 
-from .config import Config
-from .tiff_processor import TiffProcessor
-from .map_generator import MapGenerator
+
 
 class LogEmitter(QObject):
     """Emitter for log messages to be displayed in the UI."""
@@ -38,7 +41,8 @@ class MapGenerationThread(QThread):
     finished = pyqtSignal(Path)
     error = pyqtSignal(str)
     progress = pyqtSignal(int)
-    log = pyqtSignal(str, str)  # message, level
+    # log = pyqtSignal(str, str)  # message, level
+    log = pyqtSignal(str)  # just one argument
     
     def __init__(self, processor, generator, image_path, config):
         super().__init__()
@@ -217,3 +221,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# def hello():
+#     return "Hello, World!"

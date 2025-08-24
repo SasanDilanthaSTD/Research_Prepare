@@ -24,7 +24,7 @@ def setup_logging(log_dir: Path = Path("logs"),
     Returns:
         Configured logger instance
     """
-    log_dir.mkdir(parents=True, exist_ok=True)
+    # log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / log_file
     
     logger = logging.getLogger(__name__)
@@ -84,7 +84,7 @@ def log_execution_time(logger: logging.Logger):
         return wrapper
     return decorator
 
-def load_config(config_path: Path = Path("config.yml")) -> Dict[str, Any]:
+def load_config(config_path: Path = Path("./config/config.yml")) -> Dict[str, Any]:
     """Load configuration from YAML file."""
     logger = logging.getLogger(__name__)
     try:

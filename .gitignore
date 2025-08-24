@@ -11,6 +11,9 @@ Notebooks/test/test/patches/*
 
 
 /temp/*
+temp_map
+src/temp
+src/temp_map
 
 .vscode/
 .idea/

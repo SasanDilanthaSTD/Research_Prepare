@@ -6,10 +6,11 @@ from pathlib import Path
 import geopandas as gpd
 from typing import List, Optional
 import logging
-from utils import log_execution_time
 
-from config import Config 
-# from .sys_model import GrowthStageModel
+from src.App.utils import log_execution_time
+from src.App.config import Config
+from src.App.model.sys_model import GrowthStageModel
+
 
 class TiffProcessor:
     """Processes GeoTIFF files to generate growth stage maps."""
@@ -81,6 +82,8 @@ class TiffProcessor:
                             
                         prediction_label = self.model.predict_growth_stage(features)
                         classified_raster[r_start:r_end, c_start:c_end] = prediction_label
+                        # self.logger.debug(f"Processed patch at ({r_start},{c_start}) with label {prediction_label}")
+                        self.logger.info(f"Processed patch at ({r_start},{c_start}) with label {prediction_label}")
                     except Exception as e:
                         self.logger.warning(f"Skipping patch at ({r_start},{c_start}): {e}")
                         num_patches_skipped += 1

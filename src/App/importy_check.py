@@ -9,10 +9,10 @@ try:
     # ensure gpd is imported
     print(f"Importing modules {gpd.__version__}")
 
-    from utils import log_execution_time   # from src/utils.py
-    from config import Config       # from src/config/config.py
+    # from utils import log_execution_time   # from src/utils.py
+    # from config import Config       # from src/config/config.py
     
-    from component import TiffProcessor
+    # from component import TiffProcessor
     from component import MapGenerator
 
     print("Modules imported successfully")

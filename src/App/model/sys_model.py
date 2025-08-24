@@ -2,8 +2,9 @@ from pathlib import Path
 import joblib
 from typing import List, Optional
 import numpy as np
-from .utils import calculate_ndvi, calculate_ndwi, log_execution_time
 import logging
+
+from src.App.utils import calculate_ndvi, calculate_ndwi, log_execution_time
 
 class GrowthStageModel:
     """Wrapper class for the growth stage prediction model."""
@@ -40,16 +41,16 @@ class GrowthStageModel:
         try:
             red_band = patch_array[band_mapping["RED"]]
             nir_band = patch_array[band_mapping["NIR"]]
-            swir_band = patch_array[band_mapping.get("SWIR", 1)]  # Default to band 1
+            green_band = patch_array[band_mapping.get("GREEN", 1)]  # Default to band 1
             
             ndvi = calculate_ndvi(nir_band, red_band)
-            ndwi = calculate_ndwi(nir_band, swir_band)
+            ndwi = calculate_ndwi(nir_band, green_band)
             
             features = [
                 np.mean(ndvi), np.std(ndvi),
                 np.mean(ndwi), np.std(ndwi),
                 np.percentile(nir_band, 75),
-                np.mean(swir_band > np.quantile(swir_band, 0.75))
+                np.mean(green_band > np.quantile(green_band, 0.75))
             ]
             
             self.logger.debug(f"Extracted features: {features}")

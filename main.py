@@ -1,3 +1,4 @@
-import src.App
+import src.App as App
 
-print(src.App.hello())
+if __name__ == "__main__":
+    App.main()

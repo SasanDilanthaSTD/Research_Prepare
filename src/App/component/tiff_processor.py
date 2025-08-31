@@ -82,7 +82,6 @@ class TiffProcessor:
                             
                         prediction_label = self.model.predict_growth_stage(features)
                         classified_raster[r_start:r_end, c_start:c_end] = prediction_label
-                        # self.logger.debug(f"Processed patch at ({r_start},{c_start}) with label {prediction_label}")
                         self.logger.info(f"Processed patch at ({r_start},{c_start}) with label {prediction_label}")
                     except Exception as e:
                         self.logger.warning(f"Skipping patch at ({r_start},{c_start}): {e}")

@@ -24,7 +24,7 @@ def setup_logging(log_dir: Path = Path("logs"),
     Returns:
         Configured logger instance
     """
-    # log_dir.mkdir(parents=True, exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
     log_path = log_dir / log_file
     
     logger = logging.getLogger(__name__)

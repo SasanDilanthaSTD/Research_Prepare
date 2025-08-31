@@ -31,3 +31,4 @@ processing:
 paths:
   temp: "temp"
   output: "temp_map"
+  model: "models/XGB_model_v5.joblib"

@@ -11,7 +11,7 @@ from src.App.component.tiff_processor import TiffProcessor
 from src.App.component.map_generator import MapGenerator
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, 
-                             QPushButton, QLabel, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QDialog, QComboBox, QMessageBox, QTextEdit)
+                             QPushButton, QLabel, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QDialog, QComboBox, QMessageBox, QTextEdit, QSplitter)
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt, QUrl
 from PyQt5.QtGui import QTextCursor
@@ -222,6 +222,7 @@ class MainWindow(QMainWindow):
         
         self.selected_dirs = []
         self.quality = 'medium'  # Default
+        self.current_preview_map = None
         
         self.init_ui()
         self.setWindowTitle("Sugarcane Growth Stage Visualizer")
@@ -232,18 +233,40 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         main_layout = QHBoxLayout(central_widget)
         
+        # Create splitter for resizable left and right panels
+        splitter = QSplitter(Qt.Horizontal)
+        
         # Left sidebar for existing maps
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
         left_layout.addWidget(QLabel("Existing Maps"))
         self.maps_list = QListWidget()
-        self.maps_list.itemClicked.connect(self.open_existing_map)
+        self.maps_list.itemClicked.connect(self.preview_existing_map)
         left_layout.addWidget(self.maps_list)
-        main_layout.addWidget(left_widget, stretch=1)
         
-        # Right main area
+        # Right main area - now split into preview and controls
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
+        
+        # Preview section
+        preview_label = QLabel("Map Preview")
+        preview_label.setStyleSheet("font-size: 16px; font-weight: bold; padding: 5px;")
+        right_layout.addWidget(preview_label)
+        
+        # Preview web view
+        self.preview_view = QWebEngineView()
+        self.preview_view.setMinimumHeight(400)
+        self.preview_view.setUrl(QUrl("about:blank"))  # Start with blank page
+        right_layout.addWidget(self.preview_view)
+        
+        # Preview controls
+        preview_controls_layout = QHBoxLayout()
+        self.open_fullscreen_btn = QPushButton("Open in Full Screen")
+        self.open_fullscreen_btn.setEnabled(False)
+        self.open_fullscreen_btn.clicked.connect(self.open_current_preview_fullscreen)
+        preview_controls_layout.addWidget(self.open_fullscreen_btn)
+        preview_controls_layout.addStretch()
+        right_layout.addLayout(preview_controls_layout)
         
         # Title
         title = QLabel("Sugarcane Growth Stage Visualizer")
@@ -280,14 +303,21 @@ class MainWindow(QMainWindow):
         self.status.setVisible(False)
         right_layout.addWidget(self.status)
         
-        # Log Display - Changed to QTextEdit for scrollable
+        # Log Display
         self.log_display = QTextEdit()
         self.log_display.setReadOnly(True)
-        self.log_display.setFixedHeight(200)  # Fixed size
+        self.log_display.setFixedHeight(200)
         self.log_display.setStyleSheet("background-color: #f0f0f0; padding: 10px; border-radius: 5px;")
         right_layout.addWidget(self.log_display, stretch=1)
         
-        main_layout.addWidget(right_widget, stretch=3)
+        # Add widgets to splitter
+        splitter.addWidget(left_widget)
+        splitter.addWidget(right_widget)
+        
+        # Set splitter proportions (1:3 ratio)
+        splitter.setSizes([300, 900])
+        
+        main_layout.addWidget(splitter)
         self.setCentralWidget(central_widget)
 
     def populate_existing_maps(self):
@@ -297,10 +327,29 @@ class MainWindow(QMainWindow):
             item.setData(Qt.UserRole, str(map_path))
             self.maps_list.addItem(item)
 
-    def open_existing_map(self, item):
+    def preview_existing_map(self, item):
+        """Preview the selected map in the right panel instead of opening full screen"""
         map_path = Path(item.data(Qt.UserRole))
-        viewer = MapViewer(map_path)
-        viewer.show()
+        self.current_preview_map = map_path
+        
+        # Load the map in the preview view
+        self.preview_view.setUrl(QUrl.fromLocalFile(str(map_path)))
+        self.open_fullscreen_btn.setEnabled(True)
+        
+        # Update status
+        self.status.setText(f"Previewing: {map_path.name}")
+        self.status.setVisible(True)
+
+    def open_current_preview_fullscreen(self):
+        """Open the currently previewed map in full screen"""
+        if self.current_preview_map and self.current_preview_map.exists():
+            viewer = MapViewer(self.current_preview_map)
+            viewer.show()
+
+    def open_existing_map(self, item):
+        """Legacy function - now handled by preview_existing_map"""
+        map_path = Path(item.data(Qt.UserRole))
+        self.preview_existing_map(item)
 
     def start_new_project(self):
         self.quality = self.quality_combo.currentText()
@@ -398,12 +447,16 @@ class MainWindow(QMainWindow):
         self.status.setText(f"Map generated successfully: {map_path.name}")
         self.log_message(f"Map saved to: {map_path}")
         
-        # Add to existing maps
+        # Add to existing maps and preview it
         self.populate_existing_maps()
         
-        # Open in full-screen viewer
-        viewer = MapViewer(map_path)
-        viewer.show()
+        # Find and select the new map in the list
+        for i in range(self.maps_list.count()):
+            item = self.maps_list.item(i)
+            if Path(item.data(Qt.UserRole)) == map_path:
+                self.maps_list.setCurrentItem(item)
+                self.preview_existing_map(item)
+                break
 
     def on_error(self, message):
         self.create_btn.setEnabled(True)
@@ -423,6 +476,7 @@ def main():
         QPushButton:hover { background-color: #0056D2; }
         QProgressBar { background-color: #E9ECEF; border-radius: 5px; text-align: center; }
         QProgressBar::chunk { background-color: #007BFF; border-radius: 5px; }
+        QSplitter::handle { background-color: #E0E0E0; }
     """)
     window = MainWindow()
     window.show()

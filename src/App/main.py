@@ -10,7 +10,7 @@ from src.App.config import Config
 from src.App.component.tiff_processor import TiffProcessor
 from src.App.component.map_generator import MapGenerator
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget,
-                             QPushButton, QLabel, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QDialog, QComboBox, QMessageBox, QTextEdit, QSplitter, QStackedWidget, QGraphicsDropShadowEffect)
+                             QPushButton, QLabel, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QDialog, QComboBox, QMessageBox, QTextEdit, QSplitter, QStackedWidget, QGraphicsDropShadowEffect, QFrame)
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt, QUrl, QPropertyAnimation, QSequentialAnimationGroup
 from PyQt5.QtGui import QTextCursor, QPixmap, QIcon, QFont
@@ -162,6 +162,190 @@ class MapGenerationThread(QThread):
             self.log_emitter.emit(f"Error during processing: {str(e)}", "error")
             self.error.emit(str(e))
 
+class ColorLegendWidget(QWidget):
+    """Widget to display color legend for growth stages"""
+    
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+        self.init_ui()
+    
+    def init_ui(self):
+        layout = QVBoxLayout()
+        layout.setContentsMargins(10, 5, 10, 5)
+        layout.setSpacing(3)
+        
+        # Add color items for each growth stage
+        growth_stages = [
+            ("germination", "Germination"),
+            ("tillering", "Tillering"), 
+            ("grand_growth", "Grand Growth"),
+            ("ripening", "Ripening"),
+            (None, "Unclassified")
+        ]
+        
+        for stage_key, stage_name in growth_stages:
+            color_item = self.create_color_item(stage_key, stage_name)
+            layout.addWidget(color_item)
+        
+        layout.addStretch()
+        self.setLayout(layout)
+    
+    def create_color_item(self, stage_key, stage_name):
+        """Create a color legend item"""
+        item_widget = QWidget()
+        item_layout = QHBoxLayout()
+        item_layout.setContentsMargins(2, 2, 2, 2)
+        item_layout.setSpacing(8)
+        
+        # Color square
+        color_square = QLabel()
+        color_square.setFixedSize(16, 16)
+        color = self.config.default_colors.get(stage_key, '#808080')
+        color_square.setStyleSheet(f"""
+            QLabel {{
+                background-color: {color};
+                border: 1px solid #7f8c8d;
+                border-radius: 2px;
+            }}
+        """)
+        
+        # Stage name
+        name_label = QLabel(stage_name)
+        name_label.setStyleSheet("""
+            QLabel {
+                font-size: 12px;
+                color: #34495e;
+                font-weight: 500;
+            }
+        """)
+        
+        # Color code
+        color_code = self.config.default_colors.get(stage_key, '#808080')
+        code_label = QLabel(color_code)
+        code_label.setStyleSheet("""
+            QLabel {
+                font-size: 10px;
+                color: #7f8c8d;
+                font-family: monospace;
+            }
+        """)
+        
+        item_layout.addWidget(color_square)
+        item_layout.addWidget(name_label)
+        item_layout.addStretch()
+        item_layout.addWidget(code_label)
+        
+        item_widget.setLayout(item_layout)
+        item_widget.setStyleSheet("""
+            QWidget {
+                background-color: transparent;
+                border: none;
+            }
+        """)
+        return item_widget
+
+class WelcomeWidget(QWidget):
+    """Welcome screen widget that shows when no map is selected"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.init_ui()
+    
+    def init_ui(self):
+        layout = QVBoxLayout()
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(50, 50, 50, 50)
+        layout.setSpacing(30)
+        
+        # Logo before the title
+        if hasattr(self.parent, 'logo_path') and os.path.exists(self.parent.logo_path):
+            logo_label = QLabel()
+            pixmap = QPixmap(self.parent.logo_path)
+            pixmap = pixmap.scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            logo_label.setPixmap(pixmap)
+            logo_label.setAlignment(Qt.AlignCenter)
+            layout.addWidget(logo_label)
+        
+        # Title
+        title = QLabel("Sugarcane Growth Stage Visualizer")
+        title.setStyleSheet("""
+            QLabel {
+                font-size: 32px;
+                font-weight: bold;
+                color: #2c3e50;
+                text-align: center;
+            }
+        """)
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+        
+        # Separator line
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        separator.setStyleSheet("""
+            QFrame {
+                color: #bdc3c7;
+                background-color: #bdc3c7;
+                max-height: 1px;
+            }
+        """)
+        layout.addWidget(separator)
+        
+        # Instructions
+        instructions = QLabel(
+            "To get started:\n\n"
+            "1. Click 'Create New Growth-Stage Map' to process new TIFF images\n"
+            "2. Select one of the existing maps from the left panel to preview it\n"
+            "3. Use the color legend on the left to understand growth stage colors"
+        )
+        instructions.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                color: #34495e;
+                text-align: center;
+                line-height: 1.5;
+            }
+        """)
+        instructions.setAlignment(Qt.AlignCenter)
+        instructions.setWordWrap(True)
+        layout.addWidget(instructions)
+        
+        # Create New Button in welcome screen
+        self.create_btn = QPushButton("Create New Growth-Stage Map")
+        self.create_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #007BFF;
+                color: white;
+                border: none;
+                padding: 15px 30px;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: bold;
+                margin: 20px;
+            }
+            QPushButton:hover {
+                background-color: #0056D2;
+            }
+            QPushButton:pressed {
+                background-color: #004085;
+            }
+        """)
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(15)
+        shadow.setColor(Qt.gray)
+        shadow.setOffset(0, 4)
+        self.create_btn.setGraphicsEffect(shadow)
+        self.create_btn.setToolTip("Start the process to create a new growth-stage map by selecting directories with TIFF images.")
+        self.create_btn.clicked.connect(self.parent.start_new_project)
+        layout.addWidget(self.create_btn, alignment=Qt.AlignCenter)
+        
+        layout.addStretch()
+        
+        self.setLayout(layout)
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -169,7 +353,7 @@ class MainWindow(QMainWindow):
         self.processor = TiffProcessor(self.config)
         self.generator = MapGenerator(self.config)
        
-        self.project_dir = os.path.join(os.getcwd(), 'temp') # Adjust if needed to match user's path
+        self.project_dir = os.path.join(os.getcwd(), 'temp')
         self.temp_dir = os.path.join(self.project_dir, 'images')
         os.makedirs(self.temp_dir, exist_ok=True)
         self.ortho_path = Path(os.path.join(self.project_dir, 'odm_orthophoto', 'odm_orthophoto.tif'))
@@ -193,38 +377,124 @@ class MainWindow(QMainWindow):
         # Create splitter for resizable left and right panels
         splitter = QSplitter(Qt.Horizontal)
        
-        # Left sidebar for existing maps
+        # Left sidebar - divided into two parts
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
-        left_title = QLabel("Existing Maps")
-        left_title.setStyleSheet("font-size: 18px; font-weight: bold; padding: 10px;")
-        left_layout.addWidget(left_title)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+        left_layout.setSpacing(5)
+        
+        # Create a splitter for the left panel to divide it vertically
+        left_splitter = QSplitter(Qt.Vertical)
+        
+        # Top part: Existing maps list
+        maps_widget = QWidget()
+        maps_layout = QVBoxLayout(maps_widget)
+        maps_layout.setContentsMargins(0, 0, 0, 0)
+        
+        maps_title = QLabel("Existing Maps")
+        maps_title.setStyleSheet("""
+            QLabel {
+                font-size: 16px;
+                font-weight: bold;
+                color: #2c3e50;
+                padding: 8px;
+                background-color: #ecf0f1;
+                border-radius: 5px;
+                margin-bottom: 5px;
+            }
+        """)
+        maps_layout.addWidget(maps_title)
+        
         self.maps_list = QListWidget()
         self.maps_list.setStyleSheet("""
             QListWidget {
                 background-color: #ffffff;
-                border: 1px solid #e0e0e0;
-                border-radius: 8px;
-                padding: 5px;
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+                padding: 2px;
             }
             QListWidget::item {
-                padding: 10px;
-                border-bottom: 1px solid #f0f0f0;
+                padding: 8px;
+                border-bottom: 1px solid #ecf0f1;
+                background-color: white;
+            }
+            QListWidget::item:hover {
+                background-color: #f8f9fa;
             }
             QListWidget::item:selected {
-                background-color: #e6f2ff;
-                color: #007BFF;
+                background-color: #3498db;
+                color: white;
+                border-radius: 3px;
             }
         """)
         self.maps_list.itemClicked.connect(self.preview_existing_map)
-        left_layout.addWidget(self.maps_list)
-       
-        # Right main area - using stacked widget to switch between main view and preview
+        maps_layout.addWidget(self.maps_list)
+        
+        # Bottom part: Color legend
+        legend_widget = QWidget()
+        legend_layout = QVBoxLayout(legend_widget)
+        legend_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Color legend title
+        legend_title = QLabel("Color Legend")
+        legend_title.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                font-weight: bold;
+                color: #2c3e50;
+                padding: 8px;
+                background-color: #ecf0f1;
+                border-radius: 5px;
+                margin-bottom: 5px;
+            }
+        """)
+        legend_layout.addWidget(legend_title)
+        
+        # Color legend content
+        self.color_legend = ColorLegendWidget(self.config)
+        legend_layout.addWidget(self.color_legend)
+        
+        # Information label
+        info_label = QLabel("💡 Hover over map areas to see growth stages")
+        info_label.setStyleSheet("""
+            QLabel {
+                font-size: 11px;
+                color: #7f8c8d;
+                padding: 5px;
+                background-color: #f8f9fa;
+                border-radius: 3px;
+                margin-top: 5px;
+            }
+        """)
+        info_label.setWordWrap(True)
+        legend_layout.addWidget(info_label)
+        
+        # Add both parts to the left splitter
+        left_splitter.addWidget(maps_widget)
+        left_splitter.addWidget(legend_widget)
+        
+        # Set relative sizes (maps get 70%, legend gets 30%)
+        left_splitter.setSizes([500, 200])
+        
+        left_layout.addWidget(left_splitter)
+        
+        # Right main area - using stacked widget to switch between views
         self.right_stacked = QStackedWidget()
        
-        # Page 0: Main controls view
+        # Page 0: Welcome/Initial view with logo and button
+        self.welcome_view = WelcomeWidget(self)
+        self.welcome_view.setStyleSheet("""
+            QWidget {
+                background-color: #ffffff;
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+            }
+        """)
+       
+        # Page 1: Main controls view (your original functionality)
         self.main_view = QWidget()
         main_view_layout = QVBoxLayout(self.main_view)
+        main_view_layout.setContentsMargins(10, 10, 10, 10)
        
         # Header with logo and title
         header_layout = QHBoxLayout()
@@ -235,22 +505,22 @@ class MainWindow(QMainWindow):
             logo_label.setPixmap(pixmap)
             header_layout.addWidget(logo_label)
         title = QLabel("Sugarcane Growth Stage Visualizer")
-        title.setStyleSheet("font-size: 24px; font-weight: bold; padding: 10px;")
+        title.setStyleSheet("font-size: 24px; font-weight: bold; padding: 10px; color: #2c3e50;")
         header_layout.addWidget(title)
         header_layout.addStretch()
         main_view_layout.addLayout(header_layout)
        
-        # Processing information (replaced quality selection)
+        # Processing information
         info_layout = QHBoxLayout()
         info_label = QLabel("Processing Settings: Radiometric calibration (camera+sun), Orthophoto resolution (0.02), PC quality (high)")
-        info_label.setStyleSheet("font-size: 14px; padding: 5px; color: #6c757d;")
+        info_label.setStyleSheet("font-size: 14px; padding: 10px; color: #7f8c8d; background-color: #f8f9fa; border-radius: 5px;")
         info_label.setWordWrap(True)
         info_layout.addWidget(info_label)
         main_view_layout.addLayout(info_layout)
        
-        # Create New Button
-        self.create_btn = QPushButton("Create New Growth-Stage Map")
-        self.create_btn.setStyleSheet("""
+        # Create New Button (in main view)
+        self.create_btn_main = QPushButton("Create New Growth-Stage Map")
+        self.create_btn_main.setStyleSheet("""
             QPushButton {
                 background-color: #007BFF;
                 color: white;
@@ -266,15 +536,19 @@ class MainWindow(QMainWindow):
             QPushButton:pressed {
                 background-color: #004085;
             }
+            QPushButton:disabled {
+                background-color: #bdc3c7;
+                color: #7f8c8d;
+            }
         """)
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(10)
         shadow.setColor(Qt.gray)
         shadow.setOffset(2, 2)
-        self.create_btn.setGraphicsEffect(shadow)
-        self.create_btn.setToolTip("Start the process to create a new growth-stage map by selecting directories with TIFF images.")
-        self.create_btn.clicked.connect(self.start_new_project)
-        main_view_layout.addWidget(self.create_btn)
+        self.create_btn_main.setGraphicsEffect(shadow)
+        self.create_btn_main.setToolTip("Start the process to create a new growth-stage map by selecting directories with TIFF images.")
+        self.create_btn_main.clicked.connect(self.start_new_project)
+        main_view_layout.addWidget(self.create_btn_main)
        
         # Progress Bar
         self.progress = QProgressBar()
@@ -315,11 +589,11 @@ class MainWindow(QMainWindow):
         """)
         main_view_layout.addWidget(self.log_display, stretch=1)
        
-        # Page 1: Preview view
+        # Page 2: Preview view (ORIGINAL LAYOUT - MAXIMUM SPACE FOR MAP)
         self.preview_view_widget = QWidget()
         preview_layout = QVBoxLayout(self.preview_view_widget)
        
-        # Preview controls
+        # Preview controls (ORIGINAL STYLING)
         preview_controls_layout = QHBoxLayout()
         if os.path.exists(self.logo_path):
             logo_label_preview = QLabel()
@@ -327,6 +601,7 @@ class MainWindow(QMainWindow):
             pixmap_preview = pixmap_preview.scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             logo_label_preview.setPixmap(pixmap_preview)
             preview_controls_layout.addWidget(logo_label_preview)
+        
         self.home_btn = QPushButton("← Home")
         self.home_btn.setStyleSheet("""
             QPushButton {
@@ -366,43 +641,50 @@ class MainWindow(QMainWindow):
         preview_controls_layout.addStretch()
         preview_layout.addLayout(preview_controls_layout)
        
-        # Preview web view
+        # Preview web view - TAKES MAXIMUM SPACE (ORIGINAL)
         self.preview_web_view = QWebEngineView()
         self.preview_web_view.setUrl(QUrl("about:blank"))
         preview_layout.addWidget(self.preview_web_view)
        
-        # Add both views to stacked widget
-        self.right_stacked.addWidget(self.main_view)
-        self.right_stacked.addWidget(self.preview_view_widget)
+        # Add all views to stacked widget
+        self.right_stacked.addWidget(self.welcome_view)    # Page 0: Welcome/Initial
+        self.right_stacked.addWidget(self.main_view)       # Page 1: Main controls
+        self.right_stacked.addWidget(self.preview_view_widget)  # Page 2: Map preview
        
-        # Initially show main view
+        # Initially show welcome view
         self.right_stacked.setCurrentIndex(0)
        
         # Add widgets to splitter
         splitter.addWidget(left_widget)
         splitter.addWidget(self.right_stacked)
        
-        # Set splitter proportions (1:3 ratio)
+        # Set splitter proportions (1:3 ratio - ORIGINAL)
         splitter.setSizes([300, 900])
        
         main_layout.addWidget(splitter)
         self.setCentralWidget(central_widget)
 
-        # Add fade animation for stacked widget transitions
+        # Add fade animation for stacked widget transitions (ORIGINAL)
         self.fade_animation = QPropertyAnimation(self.right_stacked, b"opacity")
         self.fade_animation.setDuration(300)
         self.fade_animation.setStartValue(0.0)
         self.fade_animation.setEndValue(1.0)
 
-    def show_main_view(self):
-        """Switch back to main controls view with fade"""
+    def show_welcome_view(self):
+        """Switch to welcome view with fade"""
         self._fade_transition(0)
+        self.current_preview_map = None
+        self.current_preview_item = None
+
+    def show_main_view(self):
+        """Switch to main controls view with fade"""
+        self._fade_transition(1)
         self.current_preview_map = None
         self.current_preview_item = None
 
     def show_preview_view(self):
         """Switch to preview view with fade"""
-        self._fade_transition(1)
+        self._fade_transition(2)
 
     def _fade_transition(self, index):
         """Helper for fade transition"""
@@ -412,10 +694,10 @@ class MainWindow(QMainWindow):
 
     def populate_existing_maps(self):
         self.maps_list.clear()
-        for map_path in sorted(self.config.output_dir.glob("*.html"), key=os.path.getmtime, reverse=True):  # Sort by modification time, newest first
+        for map_path in sorted(self.config.output_dir.glob("*.html"), key=os.path.getmtime, reverse=True):
             item = QListWidgetItem(map_path.name)
             item.setData(Qt.UserRole, str(map_path))
-            item.setToolTip(str(map_path))
+            item.setToolTip(f"Created: {datetime.fromtimestamp(map_path.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}")
             self.maps_list.addItem(item)
 
     def preview_existing_map(self, item):
@@ -485,7 +767,13 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Deletion Error", error_msg)
 
     def start_new_project(self):
-        self.create_btn.setEnabled(False)
+        """Start a new project - called from both welcome and main views"""
+        # Disable both buttons
+        if hasattr(self.welcome_view, 'create_btn'):
+            self.welcome_view.create_btn.setEnabled(False)
+        self.create_btn_main.setEnabled(False)
+        
+        self.show_main_view()  # Switch to main view when starting new project
         self.handle_choose_directories()
 
     def handle_choose_directories(self):
@@ -503,20 +791,29 @@ class MainWindow(QMainWindow):
             if self.selected_dirs:
                 self.start_copy_images()
         else:
-            self.create_btn.setEnabled(True)
+            # Re-enable buttons if user cancels
+            if hasattr(self.welcome_view, 'create_btn'):
+                self.welcome_view.create_btn.setEnabled(True)
+            self.create_btn_main.setEnabled(True)
         dialog.deleteLater()
 
     def start_copy_images(self):
         total_files = sum(1 for directory in self.selected_dirs for root, _, files in os.walk(directory) for file in files if file.lower().endswith(('.tif', '.tiff')))
         if total_files == 0:
             self.log_message("No .TIF or .TIFF images found in selected directories.")
-            self.create_btn.setEnabled(True)
+            # Re-enable buttons
+            if hasattr(self.welcome_view, 'create_btn'):
+                self.welcome_view.create_btn.setEnabled(True)
+            self.create_btn_main.setEnabled(True)
             return
         if total_files > 500:
             msg = f"Large dataset detected ({total_files} images). This may require significant memory and time.\nProceed?"
             reply = QMessageBox.question(self, 'Warning', msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
-                self.create_btn.setEnabled(True)
+                # Re-enable buttons
+                if hasattr(self.welcome_view, 'create_btn'):
+                    self.welcome_view.create_btn.setEnabled(True)
+                self.create_btn_main.setEnabled(True)
                 return
         self.progress.setVisible(True)
         self.progress.setRange(0, 100)
@@ -567,7 +864,11 @@ class MainWindow(QMainWindow):
         self.map_worker.start()
 
     def on_map_generated(self, map_path):
-        self.create_btn.setEnabled(True)
+        # Re-enable both buttons
+        if hasattr(self.welcome_view, 'create_btn'):
+            self.welcome_view.create_btn.setEnabled(True)
+        self.create_btn_main.setEnabled(True)
+        
         self.progress.setVisible(False)
         self.status.setText(f"Map generated successfully: {map_path.name}")
         self.log_message(f"Map saved to: {map_path}")
@@ -584,7 +885,11 @@ class MainWindow(QMainWindow):
                 break
 
     def on_error(self, message):
-        self.create_btn.setEnabled(True)
+        # Re-enable both buttons
+        if hasattr(self.welcome_view, 'create_btn'):
+            self.welcome_view.create_btn.setEnabled(True)
+        self.create_btn_main.setEnabled(True)
+        
         self.progress.setVisible(False)
         self.status.setText(f"Error: {message}")
         self.log_message(f"Error: {message}", "error")
@@ -596,11 +901,11 @@ class MainWindow(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
-    app.setStyle('Fusion')  # Use Fusion style for a more modern look
+    app.setStyle('Fusion')
     script_dir = os.path.dirname(os.path.abspath(__file__))
     logo_path = os.path.join(script_dir, 'resource', 'temp_logo.png')
     if os.path.exists(logo_path):
-        app.setWindowIcon(QIcon(logo_path))  # Set logo for application execution
+        app.setWindowIcon(QIcon(logo_path))
     app.setStyleSheet("""
         QWidget {
             font-family: 'Segoe UI', Arial;

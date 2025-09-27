@@ -83,57 +83,23 @@ class ODMThread(QThread):
     finished = pyqtSignal()
     error = pyqtSignal(str)
     log = pyqtSignal(str)
-    def __init__(self, project_dir, quality):
+    def __init__(self, project_dir):
         super().__init__()
         self.project_dir = project_dir.replace('\\', '/')
-        self.quality = quality
+
     def run(self):
         try:
-            feature_quality = {
-                'high': 'high',
-                'medium': 'medium',
-                'low': 'low'
-            }.get(self.quality, 'medium')
-           
-            pc_quality = {
-                'high': 'high',
-                'medium': 'medium',
-                'low': 'low'
-            }.get(self.quality, 'medium')
-           
-            max_concurrency = {
-                'high': 8,
-                'medium': 4,
-                'low': 2
-            }.get(self.quality, 4)
-           
-            min_num_features = {
-                'high': 12000,
-                'medium': 8000,
-                'low': 6000
-            }.get(self.quality, 8000)
-           
-            feature_type = {
-                'high': 'sift',
-                'medium': 'sift',
-                'low': 'orb'
-            }.get(self.quality, 'sift')
             command = [
-                'docker', 'run', '--rm',
+                'docker', 'run', '-ti', '--rm',
                 '-v', f"{self.project_dir}:/datasets/code",
                 'opendronemap/odm',
                 '--project-path', '/datasets',
-                '--orthophoto-resolution', '5',
-                '--feature-quality', feature_quality,
-                '--pc-quality', pc_quality,
-                '--max-concurrency', str(max_concurrency),
-                '--min-num-features', str(min_num_features),
-                '--ignore-gsd',
-                '--feature-type', feature_type,
-                '--skip-3dmodel', # Skip meshing to avoid memory issues
+                '--radiometric-calibration', 'camera+sun',
+                '--orthophoto-resolution', '0.02',
+                '--pc-quality', 'high',
                 'code'
             ]
-            self.log.emit(f"Starting ODM processing with {self.quality} quality...")
+            self.log.emit("Starting ODM processing with custom command...")
             self.log.emit("Command: " + ' '.join(command))
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, universal_newlines=True)
             for line in iter(process.stdout.readline, ''):
@@ -209,7 +175,6 @@ class MainWindow(QMainWindow):
         self.ortho_path = Path(os.path.join(self.project_dir, 'odm_orthophoto', 'odm_orthophoto.tif'))
        
         self.selected_dirs = []
-        self.quality = 'medium' # Default
         self.current_preview_map = None
         self.current_preview_item = None
        
@@ -275,29 +240,13 @@ class MainWindow(QMainWindow):
         header_layout.addStretch()
         main_view_layout.addLayout(header_layout)
        
-        # Quality selection
-        quality_layout = QHBoxLayout()
-        quality_label = QLabel("ODM Processing Quality:")
-        quality_label.setStyleSheet("font-size: 16px; padding: 5px;")
-        self.quality_combo = QComboBox()
-        self.quality_combo.addItems(['high', 'medium', 'low'])
-        self.quality_combo.setCurrentText(self.quality)
-        self.quality_combo.setStyleSheet("""
-            QComboBox {
-                background-color: white;
-                border: 1px solid #ced4da;
-                border-radius: 4px;
-                padding: 8px;
-                font-size: 14px;
-            }
-            QComboBox::drop-down {
-                border-left: 1px solid #ced4da;
-            }
-        """)
-        self.quality_combo.setToolTip("Select the processing quality. Higher quality may take longer and use more resources.")
-        quality_layout.addWidget(quality_label)
-        quality_layout.addWidget(self.quality_combo)
-        main_view_layout.addLayout(quality_layout)
+        # Processing information (replaced quality selection)
+        info_layout = QHBoxLayout()
+        info_label = QLabel("Processing Settings: Radiometric calibration (camera+sun), Orthophoto resolution (0.02), PC quality (high)")
+        info_label.setStyleSheet("font-size: 14px; padding: 5px; color: #6c757d;")
+        info_label.setWordWrap(True)
+        info_layout.addWidget(info_label)
+        main_view_layout.addLayout(info_layout)
        
         # Create New Button
         self.create_btn = QPushButton("Create New Growth-Stage Map")
@@ -536,7 +485,6 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Deletion Error", error_msg)
 
     def start_new_project(self):
-        self.quality = self.quality_combo.currentText()
         self.create_btn.setEnabled(False)
         self.handle_choose_directories()
 
@@ -565,7 +513,7 @@ class MainWindow(QMainWindow):
             self.create_btn.setEnabled(True)
             return
         if total_files > 500:
-            msg = f"Large dataset detected ({total_files} images). This may require significant memory and time.\nRecommended quality: low\nProceed?"
+            msg = f"Large dataset detected ({total_files} images). This may require significant memory and time.\nProceed?"
             reply = QMessageBox.question(self, 'Warning', msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 self.create_btn.setEnabled(True)
@@ -589,7 +537,7 @@ class MainWindow(QMainWindow):
 
     def start_odm_processing(self):
         self.status.setText("Running ODM processing (this may take a while)...")
-        self.odm_worker = ODMThread(self.project_dir, self.quality)
+        self.odm_worker = ODMThread(self.project_dir)
         self.odm_worker.finished.connect(self.on_odm_finished)
         self.odm_worker.error.connect(self.on_error)
         self.odm_worker.log.connect(self.log_message)

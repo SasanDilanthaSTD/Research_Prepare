@@ -5,13 +5,14 @@ import subprocess
 from pathlib import Path
 from queue import Queue
 import logging
+from datetime import datetime
 
 from src.App.config import Config
 from src.App.component.tiff_processor import TiffProcessor
 from src.App.component.map_generator import MapGenerator
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, 
-                             QPushButton, QLabel, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QDialog, QComboBox, QMessageBox, QTextEdit, QSplitter)
+                             QPushButton, QLabel, QFileDialog, QProgressBar, QListWidget, QListWidgetItem, QDialog, QComboBox, QMessageBox, QTextEdit, QSplitter, QStackedWidget)
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt, QUrl
 from PyQt5.QtGui import QTextCursor
@@ -187,9 +188,14 @@ class MapGenerationThread(QThread):
             self.progress.emit(75)
             self.log_emitter.emit("Generating interactive map", "info")
             
+            # Generate map name with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            map_name = f"sugarcane_growth_map_{timestamp}.html"
+            
             map_path = self.generator.generate_map(
                 geojson_path,
-                self.config.output_dir
+                self.config.output_dir,
+                map_name=map_name
             )
             
             self.progress.emit(100)
@@ -198,15 +204,6 @@ class MapGenerationThread(QThread):
         except Exception as e:
             self.log_emitter.emit(f"Error during processing: {str(e)}", "error")
             self.error.emit(str(e))
-
-class MapViewer(QMainWindow):
-    def __init__(self, map_path):
-        super().__init__()
-        self.setWindowTitle("Growth Stage Map Viewer")
-        self.web_view = QWebEngineView()
-        self.web_view.setUrl(QUrl.fromLocalFile(str(map_path)))
-        self.setCentralWidget(self.web_view)
-        self.showFullScreen()
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -223,6 +220,7 @@ class MainWindow(QMainWindow):
         self.selected_dirs = []
         self.quality = 'medium'  # Default
         self.current_preview_map = None
+        self.current_preview_item = None
         
         self.init_ui()
         self.setWindowTitle("Sugarcane Growth Stage Visualizer")
@@ -244,34 +242,17 @@ class MainWindow(QMainWindow):
         self.maps_list.itemClicked.connect(self.preview_existing_map)
         left_layout.addWidget(self.maps_list)
         
-        # Right main area - now split into preview and controls
-        right_widget = QWidget()
-        right_layout = QVBoxLayout(right_widget)
+        # Right main area - using stacked widget to switch between main view and preview
+        self.right_stacked = QStackedWidget()
         
-        # Preview section
-        preview_label = QLabel("Map Preview")
-        preview_label.setStyleSheet("font-size: 16px; font-weight: bold; padding: 5px;")
-        right_layout.addWidget(preview_label)
-        
-        # Preview web view
-        self.preview_view = QWebEngineView()
-        self.preview_view.setMinimumHeight(400)
-        self.preview_view.setUrl(QUrl("about:blank"))  # Start with blank page
-        right_layout.addWidget(self.preview_view)
-        
-        # Preview controls
-        preview_controls_layout = QHBoxLayout()
-        self.open_fullscreen_btn = QPushButton("Open in Full Screen")
-        self.open_fullscreen_btn.setEnabled(False)
-        self.open_fullscreen_btn.clicked.connect(self.open_current_preview_fullscreen)
-        preview_controls_layout.addWidget(self.open_fullscreen_btn)
-        preview_controls_layout.addStretch()
-        right_layout.addLayout(preview_controls_layout)
+        # Page 0: Main controls view
+        self.main_view = QWidget()
+        main_view_layout = QVBoxLayout(self.main_view)
         
         # Title
         title = QLabel("Sugarcane Growth Stage Visualizer")
         title.setStyleSheet("font-size: 24px; font-weight: bold; padding: 10px;")
-        right_layout.addWidget(title)
+        main_view_layout.addWidget(title)
         
         # Quality selection
         quality_layout = QHBoxLayout()
@@ -281,7 +262,7 @@ class MainWindow(QMainWindow):
         self.quality_combo.setCurrentText(self.quality)
         quality_layout.addWidget(quality_label)
         quality_layout.addWidget(self.quality_combo)
-        right_layout.addLayout(quality_layout)
+        main_view_layout.addLayout(quality_layout)
         
         # Create New Button
         self.create_btn = QPushButton("Create New Growth-Stage Map")
@@ -290,35 +271,76 @@ class MainWindow(QMainWindow):
             padding: 15px; border-radius: 5px; font-size: 16px;
         """)
         self.create_btn.clicked.connect(self.start_new_project)
-        right_layout.addWidget(self.create_btn)
+        main_view_layout.addWidget(self.create_btn)
         
         # Progress Bar
         self.progress = QProgressBar()
         self.progress.setVisible(False)
         self.progress.setStyleSheet("QProgressBar { height: 25px; }")
-        right_layout.addWidget(self.progress)
+        main_view_layout.addWidget(self.progress)
         
         # Status Label
         self.status = QLabel()
         self.status.setVisible(False)
-        right_layout.addWidget(self.status)
+        main_view_layout.addWidget(self.status)
         
         # Log Display
         self.log_display = QTextEdit()
         self.log_display.setReadOnly(True)
         self.log_display.setFixedHeight(200)
         self.log_display.setStyleSheet("background-color: #f0f0f0; padding: 10px; border-radius: 5px;")
-        right_layout.addWidget(self.log_display, stretch=1)
+        main_view_layout.addWidget(self.log_display, stretch=1)
+        
+        # Page 1: Preview view
+        self.preview_view_widget = QWidget()
+        preview_layout = QVBoxLayout(self.preview_view_widget)
+        
+        # Preview controls
+        preview_controls_layout = QHBoxLayout()
+        self.home_btn = QPushButton("← Home")
+        self.home_btn.setStyleSheet("padding: 8px 15px; font-size: 14px;")
+        self.home_btn.clicked.connect(self.show_main_view)
+        
+        self.delete_btn = QPushButton("🗑️ Delete Map")
+        self.delete_btn.setStyleSheet("padding: 8px 15px; font-size: 14px; background-color: #dc3545; color: white;")
+        self.delete_btn.clicked.connect(self.delete_current_map)
+        
+        preview_controls_layout.addWidget(self.home_btn)
+        preview_controls_layout.addWidget(self.delete_btn)
+        preview_controls_layout.addStretch()
+        preview_layout.addLayout(preview_controls_layout)
+        
+        # Preview web view
+        self.preview_web_view = QWebEngineView()
+        self.preview_web_view.setUrl(QUrl("about:blank"))
+        preview_layout.addWidget(self.preview_web_view)
+        
+        # Add both views to stacked widget
+        self.right_stacked.addWidget(self.main_view)
+        self.right_stacked.addWidget(self.preview_view_widget)
+        
+        # Initially show main view
+        self.right_stacked.setCurrentIndex(0)
         
         # Add widgets to splitter
         splitter.addWidget(left_widget)
-        splitter.addWidget(right_widget)
+        splitter.addWidget(self.right_stacked)
         
         # Set splitter proportions (1:3 ratio)
         splitter.setSizes([300, 900])
         
         main_layout.addWidget(splitter)
         self.setCentralWidget(central_widget)
+
+    def show_main_view(self):
+        """Switch back to main controls view"""
+        self.right_stacked.setCurrentIndex(0)
+        self.current_preview_map = None
+        self.current_preview_item = None
+
+    def show_preview_view(self):
+        """Switch to preview view"""
+        self.right_stacked.setCurrentIndex(1)
 
     def populate_existing_maps(self):
         self.maps_list.clear()
@@ -328,28 +350,70 @@ class MainWindow(QMainWindow):
             self.maps_list.addItem(item)
 
     def preview_existing_map(self, item):
-        """Preview the selected map in the right panel instead of opening full screen"""
+        """Preview the selected map in the right panel"""
         map_path = Path(item.data(Qt.UserRole))
         self.current_preview_map = map_path
+        self.current_preview_item = item
         
         # Load the map in the preview view
-        self.preview_view.setUrl(QUrl.fromLocalFile(str(map_path)))
-        self.open_fullscreen_btn.setEnabled(True)
+        self.preview_web_view.setUrl(QUrl.fromLocalFile(str(map_path)))
+        
+        # Switch to preview view
+        self.show_preview_view()
         
         # Update status
         self.status.setText(f"Previewing: {map_path.name}")
         self.status.setVisible(True)
 
-    def open_current_preview_fullscreen(self):
-        """Open the currently previewed map in full screen"""
-        if self.current_preview_map and self.current_preview_map.exists():
-            viewer = MapViewer(self.current_preview_map)
-            viewer.show()
-
-    def open_existing_map(self, item):
-        """Legacy function - now handled by preview_existing_map"""
-        map_path = Path(item.data(Qt.UserRole))
-        self.preview_existing_map(item)
+    def delete_current_map(self):
+        """Delete the currently previewed map with confirmation"""
+        if not self.current_preview_map or not self.current_preview_item:
+            return
+            
+        map_path = self.current_preview_map
+        map_name = map_path.name
+        
+        # Confirmation dialog
+        reply = QMessageBox.question(
+            self, 
+            'Confirm Deletion', 
+            f'Are you sure you want to delete "{map_name}"?',
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            try:
+                # Delete the map file
+                if map_path.exists():
+                    map_path.unlink()
+                    self.log_message(f"Deleted map: {map_name}")
+                
+                # Remove from list widget
+                row = self.maps_list.row(self.current_preview_item)
+                self.maps_list.takeItem(row)
+                
+                # Also delete associated files (JSON, etc.)
+                base_name = map_path.stem
+                for file_type in ['.json', '.geojson']:
+                    associated_file = map_path.parent / f"{base_name}{file_type}"
+                    if associated_file.exists():
+                        associated_file.unlink()
+                        self.log_message(f"Deleted associated file: {associated_file.name}")
+                
+                # Switch back to main view
+                self.show_main_view()
+                
+                # Clear current preview references
+                self.current_preview_map = None
+                self.current_preview_item = None
+                
+                self.status.setText(f"Map deleted successfully: {map_name}")
+                
+            except Exception as e:
+                error_msg = f"Error deleting map: {str(e)}"
+                self.log_message(error_msg, "error")
+                QMessageBox.warning(self, "Deletion Error", error_msg)
 
     def start_new_project(self):
         self.quality = self.quality_combo.currentText()
@@ -474,6 +538,7 @@ def main():
     app.setStyleSheet("""
         QWidget { font-family: Arial; font-size: 14px; }
         QPushButton:hover { background-color: #0056D2; }
+        QPushButton[background-color="#dc3545"]:hover { background-color: #c82333; }
         QProgressBar { background-color: #E9ECEF; border-radius: 5px; text-align: center; }
         QProgressBar::chunk { background-color: #007BFF; border-radius: 5px; }
         QSplitter::handle { background-color: #E0E0E0; }

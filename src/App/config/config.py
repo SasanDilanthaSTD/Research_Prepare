@@ -1,6 +1,5 @@
 import sys
 import os
-
 from pathlib import Path
 from typing import Dict, Any, List
 import logging
@@ -11,11 +10,13 @@ class Config:
     """Configuration manager that reads from YAML file."""
     
     def __init__(self):
+        # Get the root directory (where main.py is located)
+        self.root_dir = Path(__file__).parent.parent.parent.parent
+        self.src_dir = Path(__file__).parent.parent.parent
         self.app = Path(__file__).parent.parent
         self.config_path = self.app / "config" / "config.yml"
         self.logger = setup_logging()
         self.config = load_config(self.config_path)
-        self.root_dir = Path(__file__).parent.parent.parent
         
         # Validate and set paths
         self._validate_paths()
@@ -54,23 +55,30 @@ class Config:
     
     @property
     def model_path(self) -> Path:
-        return self.app / self.config.get("paths", {}).get("model", "model/model.joblib")
+        return self.app / "model" / "XGB_model_v5.joblib"
     
     @property
     def temp_dir(self) -> Path:
-        return self.root_dir / self.config.get("paths", {}).get("temp", "temp")
+        # Points to root/temp
+        return self.root_dir / "temp"
     
     @property
     def temp_map_dir(self) -> Path:
-        return self.root_dir / self.config.get("paths", {}).get("temp_map", "temp_map")
+        # Points to root/src/temp_map
+        return self.src_dir / "temp_map"
 
     @property
     def output_dir(self) -> Path:
-        return self.root_dir / self.config.get("paths", {}).get("output", "output")
+        return self.src_dir / "temp_map"
 
     @property
     def log_dir(self) -> Path:
-        return self.root_dir / self.config.get("paths", {}).get("logs", "logs")
+        return self.root_dir / "logs"
+    
+    @property
+    def resource_dir(self) -> Path:
+        # Points to root/src/App/resource
+        return self.app / "resource"
     
     def _validate_paths(self):
         """Validate that all required paths exist."""
@@ -81,9 +89,9 @@ class Config:
             self.logger.error(error_msg)
             raise FileNotFoundError(error_msg)
         
-        self.temp_dir.mkdir(parents=True, exist_ok=True)
+        # Create necessary directories
         self.temp_map_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        # self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.resource_dir.mkdir(parents=True, exist_ok=True)
         
         self.logger.info("All paths validated successfully")

@@ -20,4 +20,6 @@ src/temp_map
 
 .vscode
 
+src/App/img_backup
+
 src/App/temp/*

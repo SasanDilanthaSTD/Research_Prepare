@@ -29,6 +29,6 @@ processing:
   band_mapping_type: "ODM"
 
 paths:
-  model: "src/model/xgb_model_v3.joblib"
+  model: "src/model/xgb_model_v13.joblib"
   temp: "temp"
   output: "temp_map"

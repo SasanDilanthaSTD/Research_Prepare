@@ -109,9 +109,9 @@ class MapGenerator:
             
             self.logger.info(f"Found orthophoto file: {orthophoto_path}")
             
-            # Create timestamped folder in resource directory
+            # Create timestamped folder in orthophoto backup directory
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            resource_folder = self.config.resource_dir / f"orthophoto_{timestamp}"
+            resource_folder = self.config.otho_photo_backup_dir / f"orthophoto_{timestamp}"
             resource_folder.mkdir(parents=True, exist_ok=True)
             
             self.logger.info(f"Created resource folder: {resource_folder}")

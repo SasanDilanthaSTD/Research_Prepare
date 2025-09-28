@@ -55,7 +55,7 @@ class Config:
     
     @property
     def model_path(self) -> Path:
-        return self.app / "model" / "XGB_model_v5.joblib"
+        return self.app / "model" / "XGB_model_v13.joblib"
     
     @property
     def temp_dir(self) -> Path:
@@ -77,8 +77,11 @@ class Config:
     
     @property
     def resource_dir(self) -> Path:
-        # Points to root/src/App/resource
         return self.app / "resource"
+    
+    @property
+    def otho_photo_backup_dir(self) -> Path:
+        return self.app / "img_backup"
     
     def _validate_paths(self):
         """Validate that all required paths exist."""

@@ -9,7 +9,6 @@ matplotlib
 joblib
 seaborn
 mlflow
-gdal
 xgboost
 imblearn
 exifread
@@ -22,5 +21,6 @@ geopandas
 contextily
 pyyaml
 PyQtWebEngine
+folium
 typing
 -e .

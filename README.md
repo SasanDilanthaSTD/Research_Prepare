@@ -30,3 +30,7 @@ conda env list
 ```bash
 pip install -r requirements.txt
 ```
+
+```bash
+conda install -c conda-forge gdal
+```

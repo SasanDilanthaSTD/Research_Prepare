@@ -19,6 +19,9 @@ src/temp_map
 .idea/
 
 .vscode
+.venv
+
+**/__pycache__
 
 src/App/img_backup
 
